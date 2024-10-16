@@ -1,0 +1,53 @@
+name: Terraform apply
+on:
+  issue_comment:
+    types:
+      - created
+
+jobs:
+  apply:
+    permissions: write-all
+    runs-on: ubuntu-latest
+    if: ${{ github.event.issue.pull_request && github.event.comment.body == '/apply' }}
+    steps:
+      - name: Check if PR is open
+        run: |
+          gh api graphql --silent --raw-field query="mutation AddReaction {addReaction(input:{subjectId:\"$NODE_ID\",content:EYES}){reaction{content}subject{id}}}"
+          STATE=$(gh pr view $PR_NUMBER --repo ${{ github.repository }} --json state --jq .state)
+          if [ "$STATE" != "OPEN" ]; then
+            echo "Cannot build for closed PRs"
+            (
+              echo "**${{ github.workflow }}**"
+              echo "Cannot apply a closed PR"
+            ) | \
+            gh pr comment "${PR_NUMBER}" --repo ${{ github.repository }} -F -
+            gh api graphql --silent --raw-field query="mutation AddReaction {addReaction(input:{subjectId:\"$NODE_ID\",content:THUMBS_DOWN}){reaction{content}subject{id}}}"
+            gh api graphql --silent --raw-field query="mutation RemoveReaction {removeReaction(input:{subjectId:\"$NODE_ID\",content:EYES}){reaction{content}subject{id}}}"
+            exit 1
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          NODE_ID: ${{ github.event.comment.node_id }}
+      - name: Get PR HEAD Ref
+        id: getRef
+        run: echo "pr_ref=$(gh pr view $PR_NUMBER --repo ${{ github.repository }} --json headRefOid | jq -r '.headRefOid')" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ steps.getRef.outputs.pr_ref }}
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - name: Setup Age Key to decode all secrets
+        run: mkdir -p ~/.config/sops/age/ && echo $AGE > ~/.config/sops/age/keys.txt
+        env:
+          AGE: ${{secrets.AGE}}
+      - run: |
+          nix run '.#apply'
+          gh pr merge $PR_NUMBER --squash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.issue.number }}

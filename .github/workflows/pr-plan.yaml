@@ -1,0 +1,32 @@
+name: Terraform plan
+on:
+  pull_request:
+
+jobs:
+  tf:
+    runs-on: ubuntu-latest
+
+    permissions:
+      actions: read
+      checks: write
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - name: Setup Age key to decode ecrets
+        run: mkdir -p ~/.config/sops/age/ && echo $AGE > ~/.config/sops/age/keys.txt
+        env:
+          AGE: ${{secrets.AGE}}
+      - run: |
+          nix run '.#plan'
+          echo tofu=$(nix run '.#path') >> $GITHUB_OUTPUT
+        id: plan
+      - name: Post PR comment
+        uses: borchero/terraform-plan-comment@v2
+        with:
+          token: ${{ github.token }}
+          planfile: plan
+          terraform-cmd: ${{steps.plan.outputs.tofu }}
