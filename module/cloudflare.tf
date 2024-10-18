@@ -82,3 +82,15 @@ resource "cloudflare_record" "domain" {
   ttl     = 1
   comment = "Page: ${cloudflare_pages_project.project.name}"
 }
+
+resource "cloudflare_page_rule" "webfinger_redirect" {
+  zone_id = cloudflare_zone.zone.id
+  target  = "${var.domain}/.well-known/webfinger?*"
+
+  actions {
+    forwarding_url {
+      url         = var.webfinger_redirect_url
+      status_code = 302
+    }
+  }
+}
