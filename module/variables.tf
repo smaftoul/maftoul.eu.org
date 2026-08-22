@@ -12,8 +12,3 @@ variable "tfcloud_org" {
   description = "The Terraform Cloud organization to use"
   type        = string
 }
-
-variable "webfinger_redirect_url" {
-  description = "The URL to redirect webfinger requests to"
-  type        = string
-}
