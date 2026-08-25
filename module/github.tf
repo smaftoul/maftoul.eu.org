@@ -4,6 +4,7 @@ resource "github_repository" "self" {
   has_projects         = true
   visibility           = "public"
   vulnerability_alerts = true
+  allow_update_branch  = true
 }
 
 resource "github_repository" "blog" {
