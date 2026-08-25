@@ -40,13 +40,13 @@ resource "cloudflare_email_routing_catch_all" "catch_all" {
 resource "cloudflare_pages_project" "project" {
   account_id        = local.cloudflare_account_id
   name              = "main"
-  production_branch = "astro-rewrite"
+  production_branch = "main"
   source {
     type = "github"
     config {
       owner                         = split("/", github_repository.blog.full_name)[0]
       repo_name                     = github_repository.blog.name
-      production_branch             = "astro-rewrite"
+      production_branch             = "main"
       pr_comments_enabled           = true
       deployments_enabled           = true
       production_deployment_enabled = true
