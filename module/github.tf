@@ -1,6 +1,5 @@
 resource "github_repository" "self" {
   name                 = var.domain
-  has_downloads        = true
   has_issues           = true
   has_projects         = true
   visibility           = "public"
@@ -9,7 +8,6 @@ resource "github_repository" "self" {
 
 resource "github_repository" "blog" {
   name                 = "blog"
-  has_downloads        = true
   has_issues           = true
   has_projects         = true
   visibility           = "public"
